@@ -8,7 +8,7 @@
 
 ;;sum of all multiples of 3 or 5 below 1000
 ;;aka fizzbuzz
-((defn sumMult
+((fn 
   []
   (loop [i 0
          sum 0]
