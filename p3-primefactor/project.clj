@@ -7,3 +7,12 @@
   :main ^:skip-aot p3-primefactor.core
   :target-path "target/%s"
   :profiles {:uberjar {:aot :all}})
+
+  :repl-options {
+             ;; If nREPL takes too long to load it may timeout,
+             ;; increase this to wait longer before timing out.
+             ;; Defaults to 30000 (30 seconds)
+             :timeout 120000
+             }
+
+  :jvm-opts ["-Xmx1g" "-server"] 
