@@ -15,4 +15,4 @@
              :timeout 120000
              }
 
-  :jvm-opts ["-Xmx1g" "-server"] 
+  :jvm-opts ["-Xmx2g" "-server"] 
