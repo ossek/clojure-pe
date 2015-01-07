@@ -1,5 +1,8 @@
 (ns p3-primefactor.core
-  (:gen-class))
+  (:require [clojure.math.numeric-tower :as math]))
+
+(clojure.math.numeric-tower/expt 45 1.5)
+
 
 (defn -main
   "I don't do a whole lot ... yet."
@@ -69,6 +72,7 @@
 (largestPrimeFactor 29843)
 
 (unmarkedFactors 2 [3])
+
 
 ( (fn 
     [[p & others]]
