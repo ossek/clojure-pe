@@ -1,15 +1,36 @@
 (ns p3-primefactor.core
   (:require [clojure.math.numeric-tower :as math]))
 
-(clojure.math.numeric-tower/expt 45 1.5)
-
-
 (defn -main
   "I don't do a whole lot ... yet."
   [& args]
   (println "Hello, World!"))
 
-(filter odd? (intsUpTo 20))
+(clojure.math.numeric-tower/expt 600851475143 0.5)
+(clojure.math.numeric-tower/expt 200 0.5)
+
+(defn checkSegment
+  [primesUpToSqrtMax segmentStart segmentEnd]
+  (loop [[prime & remain] primesUpToSqrtMax 
+           final-segment (filter odd? (range segmentStart segmentEnd))]
+      (if (nil? prime)
+        final-segment
+        (recur remain (crossOffMultiples prime final-segment)))))
+
+(checkSegment [2,3,5,7] 3 45)
+
+;;cross off multiples of p starting from p^.  assuming that segment is odds only
+(defn crossOffMultiples
+  [p segment]
+  (loop [check (* p p)
+         crossed-segment segment]
+    (if (<= check (last segment))
+     (if (= (mod check p) 0)
+       (recur (+ check 2) (remove (fn [x] (= x check)) crossed-segment))
+       (recur (+ check 2) crossed-segment))
+     crossed-segment)))
+
+(crossOffMultiples 5 (filter odd? (range 10 80)))
 
 ;;GC Error
 (take 12 (range 99999999))
