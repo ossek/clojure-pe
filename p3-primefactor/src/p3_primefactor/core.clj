@@ -22,12 +22,19 @@
   [x y]
   (= (mod x y) 0))
 
+(defn divByex
+  [x y]
+  (> (/ x y) 1))
+
 ;;inclusive of n
 (defn sieve
   [n]
   (if (< n 2) 
     []
-    (loop [ [p & unmarked] (filter odd? (range 2 (inc n)))
+    (loop [ [p & unmarked] (filter (fn [x] (divByex x 7)) 
+                                     (filter (fn [x] (divByex x 5)) 
+                                               (filter (fn [x] (divByex x 3)) 
+                                                         (filter odd? (range 2 (inc n))))))
            final-unmarked [] ]
       (do
         (if (nil? p)
@@ -45,6 +52,9 @@
         (recur remain (crossOffMultiples prime final-segment)))))
 
 (sieveSegment [3,5,7] 8 7.0)
+(sieveSegment [3,5,7] 18 7.0)
+(sieveSegment [3,5,7] 27 7.0)
+(sieveSegment [3,5,7] 36 7.0)
 
 (defn segmentedSieve
   [primesThrough]
@@ -54,6 +64,7 @@
     (let [segSize (int (math/floor (math/expt primesThrough 0.5)))
           baseprimes (segmentedSieve segSize) ]
       (do
+        (println (str "baseprimes " baseprimes))
        (loop [segStart (inc segSize)  
              result baseprimes ]  
         (do
@@ -62,7 +73,10 @@
            (if (< (- primesThrough segStart) segSize)
              (recur (+ segStart (inc segSize)) (into result (sieveSegment baseprimes segStart (- primesThrough segStart))))
              (do
+               (println "baseprimes " baseprimes " segStart " segStart  " segSize " segSize)
               (recur (+ segStart (inc segSize)) (into result (sieveSegment baseprimes segStart segSize)))))))))))))
+
+(segmentedSieve 60)
 (sieve 70)
 (segmentedSieve 70)
 (sieve 444)
@@ -71,23 +85,40 @@
 (segmentedSieve 30000)
 (segmentedSieve 99999)
 
-;;cross off multiples of p starting from p^.  assuming that segment is odds only
+;;cross off multiples of p starting from p^2.  assuming that segment is odds only
 (defn crossOffMultiples
   [p segment]
-  (loop [check (* p p)
-         crossed-segment segment]
-    (if (<= check (last segment))
-     (if (= (mod check p) 0)
-       (recur (+ check 2) (into [] (remove (fn [x] (= x check)) crossed-segment)))
-       (recur (+ check 2) crossed-segment))
-     crossed-segment)))
-(crossOffMultiples 5 (filter odd? (range 10 80)))
+  ;;the p^2 
+  (loop [crossed-segment segment]
+
+    )
+  )
+
+;;(defn crossOffMultiples
+;;  [p segmentStart segmentEnd]
+;;  (loop [check (* p p) 
+;;         crossed-segment []]
+;;    (if (<= check segmentEnd)
+;;     (if (= (mod check p) 0)
+;;       (recur (+ check 2) crossed-segment)
+;;       (recur (+ check 2) (conj crossed-segment check)))
+;;     crossed-segment)))
+;;(crossOffMultiples 5 10 80)
 
 ;;GC Error
 (take 12 (range 99999999))
 
 
-(defn largestPrimeFactor
+;; it should be that to find the largestprimefactor of n we only have to get prime factors up to n/2.
+;; Suppose that there are only 2 factors of n besides n,1, and these factors are 2 and n/2.
+;; suppose that n/2 is prime.  for there to be a larger prime factor of n, we would have to have some other 
+;; factor smaller than 2.  The only available is 1.  In that case the other factor is n, and n is prime.
+;; Suppose that n/2 is not prime.  This means it is divisible by prime factors < n/2, so the largest prime 
+;; factor of n is still < n/2.
+
+;; for this case either 600851475143 is prime, or the largest prime factor <= n/2.  If we test all
+;; primes <= n/2, and n is divisble by none of them, then n is prime
+(defn largestPrimeFactor ;;test all primes <= n/2, if none are factors, n is prime
   [n]
   (if (= n 2)
     2
@@ -98,6 +129,8 @@
         (if (and (divBy n first) (> first currentMax))
           (recur restPrimesLessThanN first)
           (recur restPrimesLessThanN currentMax))))))
+
+(math/floor (/ 600851475143 2.0))
 (largestPrimeFactor 600851475143)
 (largestPrimeFactor 19873)
 
