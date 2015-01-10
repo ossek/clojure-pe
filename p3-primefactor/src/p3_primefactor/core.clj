@@ -24,22 +24,30 @@
 
 (defn divByex
   [x y]
-  (> (/ x y) 1))
+  (and (= (mod x y) 0) (> (/ x y) 1)))
+
+(defn nextNotMultipleOf
+  [factorsToCheck]
+  (fn [lastNonMultiple] 
+    (loop [candidate (inc lastNonMultiple)]
+    (if (some (fn [factor] (divByex candidate factor)) factorsToCheck)
+      (recur (inc candidate))
+      candidate))))
+
+(take 5 (iterate (nextNotMultipleOf [3,5,7]) 8))
 
 ;;inclusive of n
 (defn sieve
   [n]
   (if (< n 2) 
     []
-    (loop [ [p & unmarked] (filter (fn [x] (divByex x 7)) 
-                                     (filter (fn [x] (divByex x 5)) 
-                                               (filter (fn [x] (divByex x 3)) 
-                                                         (filter odd? (range 2 (inc n))))))
+    (loop [ [p & unmarked] (filter odd? (range 2 (inc n)))
            final-unmarked [] ]
       (do
         (if (nil? p)
           final-unmarked
           (recur (unmarkedFactors p unmarked)  (conj final-unmarked p)))))))
+(sieve 70)
 
 ;;segment includes the segmentSize - segmentStart element.  eg if the
 ;; values are 3 4 respectively, includes 3 4 5 6 
