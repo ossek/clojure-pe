@@ -41,7 +41,7 @@
   [primesToNextCompositeSeq previousPrime]
   (loop [candidate (inc previousPrime)] 
           (if (containsNextMultipleValue primesToNextCompositeSeq candidate)
-            (findAndUpdateNextComposite primesToNextCompositeSeq candidate)
+            (findAndUpdateNextCompositeByPrimeIfMatch primesToNextCompositeSeq candidate)
             (assoc primesToNextCompositeSeq {:prime candidate :nextMultiple (+ candidate candidate)}))))
 (incrementUntilNextPrime [{:prime 2 :nextMultiple 4} {:prime 3 :nextMultiple 6}] 3)
 
