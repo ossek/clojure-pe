@@ -30,20 +30,37 @@
 ;;maintain a map in a closure.  keys are discovered primes, plus the next multiple of that prime that will be encountered.
 ;;when incrementing i, check the list's values for match.  For each discovered match, increment it by the key.  If no match, 
 ;;add i as a key, i+i as a value, and return i   
-(defn nextprime 
-  (fn [primesToNextCompositeSeq]
-    (fn [previousPrime] 
-      ) [{:prime 2 :nextMultiple 4}] ))
 
+(take 6 (map :previousPrime (iterate nextPrime {:previousPrime 2 :primesToNextCompositeSeq [{:prime 2 :nextMultiple 4}]} )))
+(take 6 (iterate nextPrime {:previousPrime 2 :primesToNextCompositeSeq [{:prime 2 :nextMultiple 4}]} ))
+
+;; we to end up with a function that takes the last prime, and gives us the next one, to use with iterator function.
 ;;return the mapping of primes to their next composites, either with any matched 
 ;; next composites incremented, or with the prime added
-(defn incrementUntilNextPrime
-  [primesToNextCompositeSeq previousPrime]
-  (loop [candidate (inc previousPrime)] 
-          (if (containsNextMultipleValue primesToNextCompositeSeq candidate)
-            (findAndUpdateNextCompositeByPrimeIfMatch primesToNextCompositeSeq candidate)
-            (assoc primesToNextCompositeSeq {:prime candidate :nextMultiple (+ candidate candidate)}))))
-(incrementUntilNextPrime [{:prime 2 :nextMultiple 4} {:prime 3 :nextMultiple 6}] 3)
+(defn nextPrime
+  [primesToNextCompositeSeq_previousPrime]
+  (loop [candidate (inc (:previousPrime primesToNextCompositeSeq_previousPrime))
+         ptn_pp primesToNextCompositeSeq_previousPrime] 
+          (if (containsNextMultipleValue 
+                (:primesToNextCompositeSeq primesToNextCompositeSeq_previousPrime) 
+                candidate)
+            (recur 
+              (inc candidate) 
+              {:previousPrime (:previousPrime ptn_pp) 
+                :primesToNextCompositeSeq (findAndUpdateNextCompositeByPrimeIfMatch (:primesToNextCompositeSeq ptn_pp) candidate)})
+            {:previousPrime candidate
+             :primesToNextCompositeSeq (conj 
+                                         (:primesToNextCompositeSeq ptn_pp) 
+                                         {:prime candidate :nextMultiple (+ candidate candidate)})}))))
+(nextPrime {:previousPrime 3 
+                          :primesToNextCompositeSeq [{:prime 2 
+                                                      :nextMultiple 4} 
+                                                     {:prime 3 
+                                                      :nextMultiple 6}]})
+(nextPrime 
+  (nextPrime {:previousPrime 2 
+            :primesToNextCompositeSeq [{:prime 2 :nextMultiple 4}]}))
+
 
 ;;check if any of the next composite values in a  list of prime-to-next-composite mappings 
 ;;matches findval
@@ -73,7 +90,8 @@
   (map (fn [primeToNextComposite]
          (updateNextCompositeByPrimeIfMatch primeToNextComposite findval)) primeToNextCompositeSeq))
 ;
-(findAndUpdateNextCompositeByPrimeIfMatch [{:prime 3 :nextMultiple 6} {:prime 2 :nextMultiple 4}] 4)
+(findAndUpdateNextCompositeByPrimeIfMatch [{:prime 2 :nextMultiple 4} {:prime 3 :nextMultiple 6}] 4)
+(findAndUpdateNextCompositeByPrimeIfMatch [{:prime 2 :nextMultiple 6} {:prime 3 :nextMultiple 6} {:prime 5 :nextMultiple 10}] 6)
 
 
 ;;------try an iterator that checks by division to exclude certain next values
