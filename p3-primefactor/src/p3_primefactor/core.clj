@@ -26,6 +26,57 @@
   [x y]
   (and (= (mod x y) 0) (> (/ x y) 1)))
 
+;;------------Trying incremental / generator approach
+;;maintain a map in a closure.  keys are discovered primes, plus the next multiple of that prime that will be encountered.
+;;when incrementing i, check the list's values for match.  For each discovered match, increment it by the key.  If no match, 
+;;add i as a key, i+i as a value, and return i   
+(defn nextprime 
+  (fn [primesToNextCompositeSeq]
+    (fn [previousPrime] 
+      ) [{:prime 2 :nextMultiple 4}] ))
+
+;;return the mapping of primes to their next composites, either with any matched 
+;; next composites incremented, or with the prime added
+(defn incrementUntilNextPrime
+  [primesToNextCompositeSeq previousPrime]
+  (loop [candidate (inc previousPrime)] 
+          (if (containsNextMultipleValue primesToNextCompositeSeq candidate)
+            (findAndUpdateNextComposite primesToNextCompositeSeq candidate)
+            (assoc primesToNextCompositeSeq {:prime candidate :nextMultiple (+ candidate candidate)}))))
+(incrementUntilNextPrime [{:prime 2 :nextMultiple 4} {:prime 3 :nextMultiple 6}] 3)
+
+;;check if any of the next composite values in a  list of prime-to-next-composite mappings 
+;;matches findval
+(defn containsNextMultipleValue
+  [primesToNextCompositeSeq findval]
+  (some (fn [primeToNextComposite]
+          (= (:nextMultiple primeToNextComposite) findval)) primesToNextCompositeSeq))
+;
+(containsNextMultipleValue [{:prime 3 :nextMultiple 6} {:prime 2 :nextMultiple 4}] 4)
+
+;;update a nextComposite by prime if matches findval, otherwise just return the datastructure untransformed 
+(defn updateNextCompositeByPrimeIfMatch
+  [primeToNextComposite findval]
+    (if (= (:nextMultiple primeToNextComposite) findval)
+                 (update-in primeToNextComposite [:nextMultiple] ;;update it
+                   (fn [nextMultiple]
+                     (+ nextMultiple (:prime primeToNextComposite))))
+                   primeToNextComposite))
+;
+(updateNextCompositeByPrimeIfMatch {:prime 3 :nextMultiple 6} 4)
+(updateNextCompositeByPrimeIfMatch {:prime 3 :nextMultiple 6} 6)
+
+;;go through sequence of prime to nextComposite pair and update the nextComposite by prime if 
+;;it matches findval
+(defn findAndUpdateNextCompositeByPrimeIfMatch
+  [primeToNextCompositeSeq findval] 
+  (map (fn [primeToNextComposite]
+         (updateNextCompositeByPrimeIfMatch primeToNextComposite findval)) primeToNextCompositeSeq))
+;
+(findAndUpdateNextCompositeByPrimeIfMatch [{:prime 3 :nextMultiple 6} {:prime 2 :nextMultiple 4}] 4)
+
+
+;;------try an iterator that checks by division to exclude certain next values
 (defn nextNotMultipleOf
   [factorsToCheck]
   (fn [lastNonMultiple] 
@@ -33,15 +84,28 @@
     (if (some (fn [factor] (divByex candidate factor)) factorsToCheck)
       (recur (inc candidate))
       candidate))))
+;;lazy-seq that gives us any number not a multiple of the numbers passed in the vector
+(take 70 (iterate (nextNotMultipleOf [2,3,5,7,11]) 0))
 
-(take 5 (iterate (nextNotMultipleOf [3,5,7]) 8))
+;;generate a range excluding the multiples specified (rather than filtering them out after)
+(defn rangeExcludeMultiples
+  ([factors max]
+   (take-while (fn [x] (< x max)) (iterate (nextNotMultipleOf factors) 0)))
+  ([factors start max]
+   (take-while (fn [x] (< x max)) (iterate (nextNotMultipleOf factors) start))))
+(rangeExcludeMultiples [2,3,5,7,11] 70)
+;;this pegs for many minutes
+(rangeExcludeMultiples [2,3,5,7,11] 99999999)
+;;this doesn't
+(rangeExcludeMultiples [2,3,5,7,11] 9999999)
+(rangeExcludeMultiples [2,3,5,7,11] 5 70)
 
 ;;inclusive of n
 (defn sieve
   [n]
   (if (< n 2) 
     []
-    (loop [ [p & unmarked] (filter odd? (range 2 (inc n)))
+    (loop [ [p & unmarked] (rangeExcludeMultiples [2,3,5,7,11] 2 (inc n))
            final-unmarked [] ]
       (do
         (if (nil? p)
@@ -49,74 +113,12 @@
           (recur (unmarkedFactors p unmarked)  (conj final-unmarked p)))))))
 (sieve 70)
 
-;;segment includes the segmentSize - segmentStart element.  eg if the
-;; values are 3 4 respectively, includes 3 4 5 6 
-(defn sieveSegment
-  [primesUpToSqrtMax segmentStart segmentSize]
-   (loop [[prime & remain] primesUpToSqrtMax 
-          final-segment (into [] (filter odd? (range segmentStart (+ segmentStart segmentSize))))]
-      (if (nil? prime)
-        final-segment
-        (recur remain (crossOffMultiples prime final-segment)))))
-
-(sieveSegment [3,5,7] 8 7.0)
-(sieveSegment [3,5,7] 18 7.0)
-(sieveSegment [3,5,7] 27 7.0)
-(sieveSegment [3,5,7] 36 7.0)
-
-(defn segmentedSieve
-  [primesThrough]
-  (do
-   (if (< primesThrough 50)
-    (sieve primesThrough)
-    (let [segSize (int (math/floor (math/expt primesThrough 0.5)))
-          baseprimes (segmentedSieve segSize) ]
-      (do
-        (println (str "baseprimes " baseprimes))
-       (loop [segStart (inc segSize)  
-             result baseprimes ]  
-        (do
-          (if (> segStart primesThrough)
-           result
-           (if (< (- primesThrough segStart) segSize)
-             (recur (+ segStart (inc segSize)) (into result (sieveSegment baseprimes segStart (- primesThrough segStart))))
-             (do
-               (println "baseprimes " baseprimes " segStart " segStart  " segSize " segSize)
-              (recur (+ segStart (inc segSize)) (into result (sieveSegment baseprimes segStart segSize)))))))))))))
-
-(segmentedSieve 60)
-(sieve 70)
-(segmentedSieve 70)
-(sieve 444)
-(segmentedSieve 444)
-(sieve 99999)
-(segmentedSieve 30000)
-(segmentedSieve 99999)
-
-;;cross off multiples of p starting from p^2.  assuming that segment is odds only
-(defn crossOffMultiples
-  [p segment]
-  ;;the p^2 
-  (loop [crossed-segment segment]
-
-    )
-  )
-
-;;(defn crossOffMultiples
-;;  [p segmentStart segmentEnd]
-;;  (loop [check (* p p) 
-;;         crossed-segment []]
-;;    (if (<= check segmentEnd)
-;;     (if (= (mod check p) 0)
-;;       (recur (+ check 2) crossed-segment)
-;;       (recur (+ check 2) (conj crossed-segment check)))
-;;     crossed-segment)))
-;;(crossOffMultiples 5 10 80)
-
 ;;GC Error
 (take 12 (range 99999999))
 
 
+
+;;-------------assuming I can get a sieve working, then check by trial division against the found primes.
 ;; it should be that to find the largestprimefactor of n we only have to get prime factors up to n/2.
 ;; Suppose that there are only 2 factors of n besides n,1, and these factors are 2 and n/2.
 ;; suppose that n/2 is prime.  for there to be a larger prime factor of n, we would have to have some other 
