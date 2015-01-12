@@ -31,7 +31,8 @@
 ;;when incrementing i, check the list's values for match.  For each discovered match, increment it by the key.  If no match, 
 ;;add i as a key, i+i as a value, and return i   
 
-(take 6 (map :previousPrime (iterate nextPrime {:previousPrime 2 :primesToNextCompositeSeq [{:prime 2 :nextMultiple 4}]} )))
+;;93169
+(last (take 9999 (map :previousPrime (iterate nextPrime {:previousPrime 2 :primesToNextCompositeSeq [{:prime 2 :nextMultiple 4}]} ))))
 (take 6 (iterate nextPrime {:previousPrime 2 :primesToNextCompositeSeq [{:prime 2 :nextMultiple 4}]} ))
 
 ;; we to end up with a function that takes the last prime, and gives us the next one, to use with iterator function.
@@ -53,13 +54,13 @@
                                          (:primesToNextCompositeSeq ptn_pp) 
                                          {:prime candidate :nextMultiple (+ candidate candidate)})}))))
 (nextPrime {:previousPrime 3 
-                          :primesToNextCompositeSeq [{:prime 2 
-                                                      :nextMultiple 4} 
-                                                     {:prime 3 
-                                                      :nextMultiple 6}]})
+            :primesToNextCompositeSeq [{:prime 2 
+                                        :nextMultiple 4} 
+                                       {:prime 3 
+                                        :nextMultiple 6}]})
 (nextPrime 
   (nextPrime {:previousPrime 2 
-            :primesToNextCompositeSeq [{:prime 2 :nextMultiple 4}]}))
+              :primesToNextCompositeSeq [{:prime 2 :nextMultiple 4}]}))
 
 
 ;;check if any of the next composite values in a  list of prime-to-next-composite mappings 
@@ -70,6 +71,71 @@
           (= (:nextMultiple primeToNextComposite) findval)) primesToNextCompositeSeq))
 ;
 (containsNextMultipleValue [{:prime 3 :nextMultiple 6} {:prime 2 :nextMultiple 4}] 4)
+
+;; try having a sorted map m of nextcomposite to the prime(s) that it is a multiple of.
+;; for a candidate c, 
+;; at each iteration, check the first (least) entry of m. 
+;; if 
+;; then for each of the prime increments
+;; either add the prime increment to existing entry or add a new one
+(defn next-prime
+  [iterdata]
+  (let [previous-prime (:previous-prime iterdata)
+        composites->prime-increments (:composites->prime-increments iterdata)]
+  (loop [candidate (inc previous-prime)
+         final-composites->prime-increments composites->prime-increments] 
+    (let [first-composite->prime-increments (first final-composites->prime-increments)
+          next-composite (key first-composite->prime-increments) ]
+     (if (= candidate next-composite) ;;candidate is a composite if found
+       (let [rest-composite->prime-increments (dissoc final-composites->prime-increments next-composite)]
+         (recur (inc candidate) (update-composites-from-composites first-composite->prime-increments rest-composite->prime-increments)))
+       (let [updated (update-composites-from-prime final-composites->prime-increments candidate)]
+         {:composites->prime-increments updated :previous-prime candidate}))) )))
+(take 30 (map :previous-prime (iterate next-prime {:previous-prime 2 :composites->prime-increments (sorted-map 4 [2])} )))
+(take 7 (iterate next-prime {:previous-prime 2 :composites->prime-increments (sorted-map 4 [2])} ))
+
+(first(sorted-map 4 [2]))
+(rest(sorted-map 4 [2]))
+
+;;takes a composite -> primes.
+;; increment this composite by primes, and update or add the newly incremented values 
+;; as keys pointing to the primes they were incremented by.
+(defn update-composites-from-composites
+  [composite->prime-increments composites->prime-increments]
+  (let [composite-to-increment (key composite->prime-increments)
+        prime-increments (val composite->prime-increments)]
+    (reduce (fn [c->p-i p-i] 
+              (update-composites c->p-i composite-to-increment p-i)) 
+            composites->prime-increments 
+            prime-increments)))
+(update-composites-from-composites (first (sorted-map 4 [2,3])) (sorted-map 6 [3 4] 8 [2 5]) )
+(update-composites-from-composites (first (sorted-map 4 [2,3])) (sorted-map 8 [2 5]) )
+
+(defn update-composites
+  [composites->prime-increments src by-prime]
+  (let [new-composite (+ src by-prime)]
+    (if (contains? composites->prime-increments new-composite)
+      (assoc composites->prime-increments new-composite (conj (get composites->prime-increments new-composite) by-prime))
+      (assoc composites->prime-increments new-composite [by-prime]))))
+
+;;update upcoming composite or insert with the prime it will be incremented 
+;;when next discovered.
+(defn update-composites-from-prime
+  [composites->prime-increments prime]
+  (update-composites composites->prime-increments prime prime))
+
+(update-composites-from-prime (sorted-map) 2)
+(update-composites-from-prime (sorted-map 4 [1]) 2)
+
+
+(conj (get (sorted-map 4 '(1)) 4) 3)
+
+(sorted-map)
+
+(get {3 [6 3] 4 [8]} 3)
+(first (sorted-map 3 [6 3] 4 [8]))
+(last (sorted-map 3 [6 3] 4 [8]))
+{"3"  "4" 8}
 
 ;;update a nextComposite by prime if matches findval, otherwise just return the datastructure untransformed 
 (defn updateNextCompositeByPrimeIfMatch
@@ -129,7 +195,8 @@
         (if (nil? p)
           final-unmarked
           (recur (unmarkedFactors p unmarked)  (conj final-unmarked p)))))))
-(sieve 70)
+;99991
+(last (sieve 99999))
 
 ;;GC Error
 (take 12 (range 99999999))
